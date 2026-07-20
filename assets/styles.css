@@ -13,6 +13,9 @@
   }
 }
 *{box-sizing:border-box}
+/* Any class that sets `display` would otherwise beat the browser's built-in
+   [hidden]{display:none}, leaving "hidden" elements on screen. */
+[hidden]{display:none!important}
 html,body{margin:0}
 body{
   background:var(--bg); color:var(--ink);
