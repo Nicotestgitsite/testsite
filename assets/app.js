@@ -1211,6 +1211,7 @@ function probeStorage() {
 }
 function showNotice() {
   var box = el('notice');
+  box.style.display = '';   // clear any inline hide from a previous dismissal
   if (!STORAGE_OK) {
     el('noticeMain').innerHTML = '<b>This browser is blocking storage.</b> Picks and notes cannot be ' +
       'saved right now — they will vanish when you close this tab. Leaving private/incognito mode, ' +
@@ -1226,7 +1227,12 @@ function showNotice() {
   box.hidden = false;
 }
 function dismissNotice() {
-  el('notice').hidden = true;
+  var box = el('notice');
+  box.hidden = true;
+  // Belt and braces: an inline style beats any class rule, so dismissing works
+  // even if a stale cached stylesheet is in play -- which is exactly the case on
+  // a home-screen install still serving the previous version's CSS.
+  box.style.display = 'none';
   try { localStorage.setItem(LS_NOTICE, '1'); } catch (e) {}
 }
 
@@ -1518,9 +1524,24 @@ function boot() {
     });
 }
 
+/* Updating an installed (home-screen) app is the awkward case: it serves from
+   cache and has no address bar to force a reload, so a fix can sit unused for
+   several launches. The worker calls skipWaiting/claim, and when it takes over
+   we reload once so the new CSS/JS actually apply on this launch rather than the
+   next one. Picks and notes live in localStorage, so a reload costs nothing. */
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  var swReloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (swReloading) return;
+    swReloading = true;
+    // only reload for a genuine version swap, not the very first install
+    if (navigator.serviceWorker.controller) location.reload();
+  });
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      reg.update();                      // check for a new version on every launch
+      setInterval(function () { reg.update(); }, 60 * 60 * 1000);
+    }).catch(function () {});
   });
 }
 el('content').innerHTML = '<div class="loading">Loading the programme…</div>';

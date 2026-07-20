@@ -94,11 +94,17 @@ a.round-btn{text-decoration:none}
 .notice-body p{margin:0}
 .notice-body b{color:var(--ink)}
 .notice-thanks{margin-top:5px!important;color:var(--ink-3);font-size:11.5px}
+/* 44x44 hit area (the glyph stays small) -- at 19px this was easy to miss on a
+   phone, which read as "the X is broken". Negative margin keeps the layout tight. */
 .notice-x{
   flex:none;border:0;background:transparent;color:var(--ink-3);cursor:pointer;
-  font-size:19px;line-height:1;padding:0 4px;border-radius:6px;
+  font-size:20px;line-height:1;border-radius:10px;
+  width:44px;height:44px;display:grid;place-items:center;
+  margin:-8px -8px -8px 0;-webkit-tap-highlight-color:transparent;
 }
 .notice-x:hover{color:var(--coral);background:color-mix(in srgb,var(--coral) 12%,transparent)}
+.notice-x:active{background:color-mix(in srgb,var(--coral) 22%,transparent);transform:scale(.92)}
+.notice-x:focus-visible{outline:2px solid var(--teal-2);outline-offset:-2px}
 .notice.is-hard{
   background:color-mix(in srgb,var(--coral) 12%,var(--panel));
   border-color:color-mix(in srgb,var(--coral) 40%,transparent);
