@@ -14,6 +14,19 @@ schedule. It's a plain static site — no server, no build step, no accounts.
 - **Share link** to move starred talks from laptop to phone
 - **Notes (.md)** export and **Backup / Restore** for picks and notes
 
+## Usage stats (optional, off by default)
+
+`index.html` carries a [GoatCounter](https://www.goatcounter.com) snippet that is **inert until you
+configure it** — as shipped it makes no network requests at all.
+
+To turn it on: sign up (free), then replace `YOURCODE` in the snippet at the bottom of `index.html`
+with your site code. It is cookieless, collects no personal data, needs no consent banner, respects
+Do Not Track, and is skipped on `localhost`.
+
+It reports **visit counts, rough visitor numbers, countries and referrers** — i.e. *how many* people
+use the app. It cannot tell you *who*: that would mean sending the name people type at first run,
+which would contradict the promise below. **Picks and notes are never sent anywhere.**
+
 ## Picks, notes, and your data
 
 Everything is stored in your browser's `localStorage` on **this device and this site address only**.
