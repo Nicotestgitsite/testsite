@@ -1409,12 +1409,24 @@ function prTalkEntry(t, s, extra) {
     '<div class="pr-title">' + esc(t.title) + '</div>' +
     prWho(t) + (extra || '') + '</div>';
 }
-function prEventEntry(e) {
-  return '<div class="pr-entry">' +
-    '<div class="pr-line"><span class="pr-when">' +
-    (e.start ? hhmm(e.start) + (e.end ? '–' + hhmm(e.end) : '') : 'All day') + '</span>' +
-    (e.location ? ' · <span class="pr-where">' + esc(e.location) + '</span>' : '') + '</div>' +
-    '<div class="pr-title pr-event">' + esc(e.title) + '</div></div>';
+// Full-programme talk row: lighter than prTalkEntry -- the room lives in the
+// session-block header above it, so the row is just time · title · who.
+function prProgTalkRow(t) {
+  var who = (t.honorific ? t.honorific + ' ' : '') + t.presenter +
+            (t.affiliation ? ' (' + t.affiliation + ')' : '') +
+            ((t.authors && t.authors.length > 1) ? ' · Authors: ' + t.authors.join(', ') : '');
+  return '<div class="pr-trow"><span class="pr-when">' + hhmm(t.start) + '</span> ' +
+    '<span class="pr-ttitle">' + esc(t.title) + '</span> — ' +
+    '<span class="pr-twho">' + esc(who) + '</span></div>';
+}
+function prSessionBlock(s) {
+  var head = s.code ? 'Session ' + esc(s.code) + ' · ' + esc(s.title) : esc(s.title);
+  var sub = roomLabel(s.room) + (roomLevel(s.room) ? ', ' + roomLevel(s.room) : '') +
+            (s.start ? ' · ' + hhmm(s.start) + (s.end ? '–' + hhmm(s.end) : '') : '') +
+            (s.theme ? ' · #' + s.theme : '');
+  return '<section class="pr-sess"><div class="pr-sess-head">' + head + '</div>' +
+    '<div class="pr-sess-sub">' + esc(sub) + '</div>' +
+    s.talks.map(prProgTalkRow).join('') + '</section>';
 }
 function prDocHead(title, sub) {
   return '<header class="pr-doc-head"><h1>' + esc(title) + '</h1>' +
@@ -1428,23 +1440,21 @@ function buildProgrammeHTML() {
       '15th International Coral Reef Symposium · NZICC, Auckland · Times are Auckland (NZST)' +
       (cap ? ' · programme as at ' + cap : ''))];
   DATA.days.forEach(function (day) {
-    var entries = [];
-    DATA.events.forEach(function (e) {
-      if (e.date === day.date) entries.push({ t: e.start || '', room: '', html: prEventEntry(e) });
+    // Sessions grouped as blocks, ordered by session code. Kept: coded sessions
+    // + plenaries. Dropped: DATA.events (ceremonies, teas, lunch, banquet),
+    // posters, and the film-screening "special" sessions.
+    var blocks = DATA.sessions.filter(function (s) {
+      return s.date === day.date && (s.kind === 'session' || s.kind === 'plenary');
     });
-    DATA.sessions.forEach(function (s) {
-      if (s.date !== day.date || s.kind === 'poster') return;   // posters excluded: 545 untimed entries
-      s.talks.forEach(function (t) {
-        entries.push({ t: t.start || '', room: s.room || '', html: prTalkEntry(t, s) });
-      });
-    });
-    if (!entries.length) return;
-    entries.sort(function (a, b) {
-      return (mins(a.t || '0:00') - mins(b.t || '0:00')) ||
-             (a.room < b.room ? -1 : a.room > b.room ? 1 : 0);
+    if (!blocks.length) return;
+    blocks.sort(function (a, b) {
+      // plenaries (no code) first, by start; then coded sessions by code
+      var ka = a.code ? '1_' + a.code : '0_' + (a.start || '');
+      var kb = b.code ? '1_' + b.code : '0_' + (b.start || '');
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
     });
     html.push('<section class="pr-day"><h2>' + esc(dayLabelOf(day.date)) + '</h2>' +
-      entries.map(function (x) { return x.html; }).join('') + '</section>');
+      blocks.map(prSessionBlock).join('') + '</section>');
   });
   html.push('</div>');
   return html.join('');
@@ -1506,7 +1516,7 @@ function printMySchedule() {
   if (!PICKS.size) { toast('Pick some talks first.'); return; }
   // abstracts are lazy (~3.9 MB); make sure they're in before building the PDF
   loadAbstracts().then(function () {
-    printHTML('ICRS 2026 - ' + profileSlug() + ' schedule', buildScheduleHTML());
+    printHTML('My ICRS 2026 schedule', buildScheduleHTML());
   });
 }
 
